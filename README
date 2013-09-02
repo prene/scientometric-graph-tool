@@ -1,0 +1,22 @@
+#ScientometricGraphTool v0.1
+#by Rene Pfitzner
+#mail: rpfitzner@ethz.ch
+#August/September 2013
+
+>What is ScientometricGraphTool?<
+
+ScientrometricGraphTool is a bundle of python libraries to deal with "scientometric" networks, i.e. citation networks and collaboration networks. Especially, ScientometricGraphTool allows you to take a multiplex perspective on these networks, i.e. to analyze them in connection with each other rather than as separate entities.
+
+>Tell me more about it!<
+
+As citation and collaboration networks tend to be huge in size, it is essential to have scalable code. Whereas libraries like igraph or networkx are fairly extensive concerning the already build-in functions to analyze networks, scalability is always an issue. However, a more novel network library, graph-tool by Tiago Peixoto (http://projects.skewed.de/graph-tool/), provides a fast, memory-efficient, highly scalable and versatile framework for network analysis. Hence, ScientometricGraphTool builds on graph-tool.
+
+>What do I need?<
+
+To be able to use ScientometricGraphTool you will need a working python2.7 installation as well as graph-tool. To get python, please refer to www.python.org, to get graph-tool, please refer to the project homepage http://projects.skewed.de/graph-tool/.
+
+
+>Cool, so where can I find more information?<
+
+On the project homepage: http://github.com/prene/ScientometricGraphTool 
+I will try to keep a wiki to have the code fully documented. If I fail in this endeavor, please do not hesitate to contact me at rpfitzner@ethz.ch.

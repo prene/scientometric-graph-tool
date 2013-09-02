@@ -14,7 +14,7 @@ class PaperCitationNet():
     'Paper Citation Network Structure'
     
 ##########################################################
-    def read(self,citation_file,citation_meta):
+    def read_graphml(self,citation_file,citation_meta):
         self.graph = gt.load_graph(citation_file)
         self.graph.vertex_properties['year']=self.graph.new_vertex_property('int')
         

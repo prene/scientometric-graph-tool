@@ -130,7 +130,7 @@ class PaperAuthorMultiplex():
 ################################################################        
     ##
     #Function to read a multiplex from files
-    def read(self,collab_file,citation_file,mult_file):
+    def read_graphml(self,collab_file,citation_file,mult_file):
         '''Read multiplex from files specifying the collaboration network, the citation network and multiplex meta data'''
 
         ##################################

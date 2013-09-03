@@ -15,6 +15,9 @@ As citation and collaboration networks tend to be huge in size, it is essential 
 
 To be able to use scientometric-graph-tool you will need a working python2.7 installation as well as graph-tool. To get python, please refer to www.python.org, to get graph-tool, please refer to the project homepage http://projects.skewed.de/graph-tool/.
 
+Furthermore, you will need the following python packages:
+
+- numpy
 
 >Cool, so where can I find more information?<
 

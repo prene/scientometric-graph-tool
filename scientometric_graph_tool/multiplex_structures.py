@@ -7,6 +7,7 @@ import graph_tool.all as gt
 import csv
 import itertools
 import random
+import numpy
 
 class PaperAuthorMultiplex():
     'Paper Citation and Author Collaboration Multiplex Structure'
@@ -220,9 +221,107 @@ class PaperAuthorMultiplex():
             return self._multiplex_citation[paper].keys()
         except KeyError:
             raise NoSuchPaperError()
+            
+################################################################
+    ##
+    #Degree sequence of citation->collaboration links = "distribution" of # authors/paper
+    def distribution_authors(self,paper_vertex_iterator):
+        '''Returns a list of the number of authors for the papers specified in the iterator'''
+        number_authors=[]
+        for v in paper_vertex_iterator:
+            number_authors.append(len(self._multiplex_citation[v].keys()))
+        return number_authors
         
 
-############################################################
+################################################################
+    ##
+    #Degree sequence of collaboration->citation links = "distribution" of # papers/author
+    def distribution_papers(self,author_vertex_iterator):
+        '''Returns a list of the number of papers for the authors specified in the iterator'''
+        number_papers=[]
+        for v in author_vertex_iterator:
+            number_papers.append(len(self._multiplex_collab[v].keys()))
+        return number_papers
+    
+################################################################
+    ##
+    #Function to multiplex-map proeprty maps, eventually aggregating and aggregation function
+    def multiplex_property_mapping(self,origin_layer_iterator,origin_layer_property,target_layer_property,direction=None,aggregation_function=None):
+        '''Returns list of collaboration net properties for selection of nodes and their according multiplex-mapped property, aggregated using aggregation_function.'''
+        
+        if direction == None:
+            print "###################################"
+            print "Specify direction of mapping first!"
+            print "USE direction='collab_to_citation' OR direction='citation_to_collab'"
+            print "####################################"
+            return
+        
+        if direction == 'collab_to_citation':
+        
+            origin_layer_property_values=[]
+            target_layer_property_values=[]
+        
+            if aggregation_function==None:
+                
+                print "##############################"
+                print "Assuming one-to-one multiplex!"
+                print "Consider checking this assumption using check_one_to_one()!"
+                print "Otherwise, specify aggregation function!"
+                print "##############################"
+                
+                for v in origin_layer_iterator:
+                    try:
+                        target_vertex = self._multiplex_collab[v].keys()[0]
+                        origin_layer_property_values.append(origin_layer_property[v])
+                        target_layer_property_values.append(target_layer_property[target_vertex])
+                    except IndexError: #if there is no target vertex, simply don't consider it
+                        pass
+            else:
+                for v in origin_layer_iterator:
+                    try:
+                        self._multiplex_collab[v].keys()[0]
+                        origin_layer_property_values.append(origin_layer_property[v])
+                        target_layer_property_values_TMP=[]
+                        for target_vs in self._multiplex_collab[v].keys():
+                            target_layer_property_values_TMP.append(target_layer_property[target_vs])
+                        target_layer_property_values.append(aggregation_function(target_layer_property_values_TMP))
+                    except IndexError: #if there is no target vertex, simply don't consider it
+                        pass
+                        
+            return origin_layer_property_values, target_layer_property_values
+                        
+                        
+        if direction == 'citation_to_collab':
+            origin_layer_property_values=[]
+            target_layer_property_values=[]
+        
+            if aggregation_function==None:
+                print "Assuming one-to-one multiplex!"
+                print "Consider checking this assumption using check_one_to_one()!"
+                print "Otherwise, specify aggregation function!"
+                for v in origin_layer_iterator:
+                    try:
+                        target_vertex = self._multiplex_citation[v].keys()[0]
+                        origin_layer_property_values.append(origin_layer_property[v])
+                        target_layer_property_values.append(target_layer_property[target_vertex])
+                    except IndexError: #if there is no target vertex, simply don't consider it
+                        pass
+            else:
+                for v in origin_layer_iterator:
+                    try:
+                        self._multiplex_citation[v].keys()[0]
+                        origin_layer_property_values.append(origin_layer_property[v])
+                        target_layer_property_values_TMP=[]
+                        for target_vs in self._multiplex_collab[v].keys():
+                            target_layer_property_values_TMP.append(target_layer_property[target_vs])
+                        target_layer_property_values.append(aggregation_function(target_layer_property_values_TMP))
+                    except IndexError: #if there is no target vertex, simply don't consider it
+                        pass
+                    
+            return origin_layer_property_values, target_layer_property_values
+
+
+################################################################
     ##
     #Function to calculate socially biased citations
     def socially_biased_citations(self):
@@ -256,7 +355,39 @@ class PaperAuthorMultiplex():
             print 'citations: '+str(citations)
             print 'self citation: '+str(self_citations)
             print 'socially biased citations: '+str(biased_citations)
+################################################################
             
+                        
+##################################################################################################################
+#Define module-wide functions
+
+################################################################
+    ##
+#Function to check whether multiplex is one-to-one
+def check_one_to_one(multiplex):
+    'Check whether the multiplex is a one-to-one multiplex'
+    
+    print '#####################'
+    
+    multiplex_citation_is_OneToOne=True
+    for v in multiplex.citation.vertices():
+        if len(multiplex._multiplex_citation[v].keys())>1:
+            multiplex_citation_is_OneToOne=False
+            print 'citation->collaboration is NOT one-to-one!'
+            break
+    if multiplex_citation_is_OneToOne==True:
+        print 'citation->collaboration is one-to-one.'
+            
+    multiplex_collab_is_OneToOne=True
+    for v in multiplex.collab.vertices():
+        if len(multiplex._multiplex_collab[v].keys())>1:
+            multiplex_collab_is_OneToOne=False
+            print 'collaboration->citation is NOT one-to-one!'
+            break
+    if multiplex_collab_is_OneToOne==True:
+        print 'collaboration->citation is one-to-one.'
+    print '#####################'
+    
             
 #################################################
 #define Error Classes
@@ -271,5 +402,8 @@ class NoSuchAuthorError(Exception):
     pass
     
 class CitationExistsAlreadyError(Exception):
+    pass
+
+class NotOneToOneError(Exception):
     pass
 

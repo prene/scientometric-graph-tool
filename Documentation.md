@@ -57,7 +57,24 @@ Returns a list of author (collaboration) vertex objects that have (co)authored t
 
 Calculate number of socially-biased citations for every paper. Defined as the number of citations, that are citations by people who have, at the time of citing the paper, previously collaborated with the authors.
 
+**`.distribution_authors(self,paper_vertex_iterator)`**
 
+Returns a list of the number of authors for the papers specified in the iterator.
+
+**`.distribution_papers(self,author_vertex_iterator`**
+
+Returns a list of the number of papers for the authors specified in the iterator.
+
+**`.multiplex_property_mapping(self,origin_layer_iterator,origin_layer_property,target_layer_property,direction=None,aggregation_function=None)'**
+
+Returns lists of a collaboration net property for a selection of nodes and their according multiplex-mapped property, aggregated using aggregation_function.
+
+
+####Function of module multiplex_structures
+
+**`check_one_to_one(multiplex)`**
+
+Check whether the multiplex is a one-to-one multiplex.
 
 ###`citation_net`
 ####`PaperCitationNet`

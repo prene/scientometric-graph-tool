@@ -323,6 +323,50 @@ class PaperAuthorMultiplex():
 
 ################################################################
     ##
+    #Function to calculate multiplex neighbourhood of v in layer 1. 
+    #Defined as nodes in layer 1, that are the multiplex maps of neighbours of the multiplex map of v.
+    def multiplex_neighbours(self,vertex_object,layer=None):
+        'Returns an iterator of vertices in layer, that are multiplex neighbours of vertex_object.'
+        
+        if layer==None:
+            print "###################################"
+            print "Specify start_layer of mapping first!"
+            print "USE layer='collab' OR layer='citation'"
+            print "####################################"
+            return
+                
+        if layer=='collab':
+            multiplex_neighbours_TMP=itertools.imap(lambda x: self._multiplex_citation[x].keys(),self._multiplex_collab[vertex_object].keys())
+            multiplex_neighbours=itertools.chain.from_iterable(multiplex_neighbours_TMP)
+            return multiplex_neighbours
+        
+        if layer=='citation':
+            multiplex_neighbours_TMP=itertools.imap(lambda x: self._multiplex_collab[x].keys(),self._multiplex_citation[vertex_object].keys())
+            multiplex_neighbours=itertools.chain.from_iterable(multiplex_neighbours_TMP)
+            return multiplex_neighbours
+
+
+################################################################
+    ##
+    #Function to get vertex_id's from vertex objects
+    def vertex_id(self,iterable_of_vertices,layer=None):
+        'Returns an iterator of vertex id strings of the vertex objects specified in iterable_of_vertices, being members of layer.'
+        
+        if layer==None:
+            print "###################################"
+            print "Specify layer of vertex origin!"
+            print "USE layer='collab' OR layer='citation'"
+            print "####################################"
+            return
+        
+        if layer=='collab':
+            return itertools.imap(lambda x: self.collab.vertex_properties['_graphml_vertex_id'][x],iterable_of_vertices)
+
+        if layer=='citation':
+            return itertools.imap(lambda x: self.citation.vertex_properties['_graphml_vertex_id'][x],iterable_of_vertices)
+
+################################################################
+    ##
     #Function to calculate socially biased citations
     def socially_biased_citations(self):
         '''Calculate number of socially-biased citations'''
@@ -357,6 +401,7 @@ class PaperAuthorMultiplex():
             print 'socially biased citations: '+str(biased_citations)
 ################################################################
             
+       
                         
 ##################################################################################################################
 #Define module-wide functions

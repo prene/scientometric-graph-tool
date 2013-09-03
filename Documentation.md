@@ -69,6 +69,15 @@ Returns a list of the number of papers for the authors specified in the iterator
 
 Returns lists of a collaboration net property for a selection of nodes and their according multiplex-mapped property, aggregated using aggregation_function.
 
+**`multiplex_neighbours(self,vertex_object,layer=None)`**
+
+Returns an iterator of vertices in layer, that are multiplex neighbours of vertex_object.
+
+**`vertex_id(self,iterable_of_vertices,layer=None)`**
+
+Returns an iterator of vertex id strings of the vertex objects specified in iterable_of_vertices, being members of layer.
+
+
 
 ####Function of module multiplex_structures
 

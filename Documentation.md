@@ -65,7 +65,7 @@ Returns a list of the number of authors for the papers specified in the iterator
 
 Returns a list of the number of papers for the authors specified in the iterator.
 
-**`.multiplex_property_mapping(self,origin_layer_iterator,origin_layer_property,target_layer_property,direction=None,aggregation_function=None)'**
+**`.multiplex_property_mapping(self,origin_layer_iterator,origin_layer_property,target_layer_property,direction=None,aggregation_function=None)`**
 
 Returns lists of a collaboration net property for a selection of nodes and their according multiplex-mapped property, aggregated using aggregation_function.
 

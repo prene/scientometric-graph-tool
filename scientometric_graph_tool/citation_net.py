@@ -36,11 +36,11 @@ class PaperCitationNet():
             for line in f:
                 cou+=1
                 if cou-10000*(cou/10000)==0:
-                    print cou
+                    print 'Lines read: '+str(cou)
                     t=time.time()
                     t_cum+=t-t_prev
                     t_prev=t
-                    print t_cum
+                    print 'Time passed: '+str(t_cum)
                 tmp=line.split(delimiter)
                 cited_paper=tmp[cited_column].rstrip()
                 citing_paper=tmp[citing_column].rstrip()

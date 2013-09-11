@@ -22,7 +22,7 @@ class PaperAuthorMultiplex():
         self.citation.vertex_properties['year']=self.citation.new_vertex_property('int')
         self.citation.vertex_properties['_graphml_vertex_id']=self.citation.new_vertex_property('string')
         self.citation.edge_properties['year']=self.citation.new_edge_property('int')
-        self.collab.vertex_properties['year']=self.collab.new_vertex_property('int')
+#        self.collab.vertex_properties['year']=self.collab.new_vertex_property('int')
         self.collab.vertex_properties['_graphml_vertex_id']=self.collab.new_vertex_property('string')
         self.collab.edge_properties['first_year_collaborated']=self.collab.new_edge_property('int')
         
@@ -185,7 +185,8 @@ class PaperAuthorMultiplex():
                 except KeyError:
                     self.add_paper(paper_id,year,[author_id],update_collaborations=False) #otherwise add it, incl. first author
                     paper = self.citation.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_id])
-                    
+                
+    
                 
                 coauth = self._multiplex_citation[paper].keys()
                 for i in coauth:

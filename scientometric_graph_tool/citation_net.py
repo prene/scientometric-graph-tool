@@ -162,13 +162,6 @@ class PaperCitationNet():
         return itertools.imap(lambda x: self.graph.vertex_properties['_graphml_vertex_id'][x],iterable_of_vertices)
 
 
-##########################################################
-        ##
-        #Calculate statistics of long-range-correlation motif
-        def long_range_motif(self):
-            pass
-              
-
 ##########################################################################################################################
             
 class MolloyReedCitationInstance(PaperCitationNet):

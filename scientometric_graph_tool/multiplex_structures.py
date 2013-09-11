@@ -80,6 +80,33 @@ class PaperAuthorMultiplex():
                 if self.collab.edge_properties['first_year_collaborated'][e]>int(year) or self.collab.edge_properties['first_year_collaborated'][e]==0:
                     self.collab.edge_properties['first_year_collaborated'][e]=int(year)        
 
+################################################################
+    ##
+    #Funtion to add multiplex interconnection
+    def add_multiplex(self,paper_id,author_id,year):
+        try:
+            new_paper=self.citation.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_id])
+        except KeyError:
+            new_paper=self.citation.add_vertex()
+            self._citation_graphml_vertex_id_to_gt_id[paper_id]=self.citation.vertex_index[new_paper]
+            self.citation.vertex_properties['_graphml_vertex_id'][new_paper]=paper_id
+            self.citation.vertex_properties['year'][new_paper]=int(year)
+            self._multiplex_citation[new_paper]={}
+        
+        try:
+            new_author=self.collab.vertex(self._collab_graphml_vertex_id_to_gt_id[author_id])
+        except KeyError:
+            new_author = self.collab.add_vertex()
+            self._collab_graphml_vertex_id_to_gt_id[author_id]=self.collab.vertex_index[new_author]
+            self.collab.vertex_properties['_graphml_vertex_id'][new_author]=author_id
+            self._multiplex_collab[new_author]={}
+        
+        #add multiplex information
+        self._multiplex_collab[new_author][new_paper]=True
+        self._multiplex_citation[new_paper][new_author]=True
+
+        
+
 
 ################################################################
     ##
@@ -108,25 +135,82 @@ class PaperAuthorMultiplex():
     #Function to add plain new collaboration, independent of papers, from other sources
     def add_collaboration(self,author1, author2, year):
         '''Add collaboration between two authors'''
-         
-        for author in [author1,author2]:
+        
+        if author1==author2: #simply add the author to the network, if not existing
             try:
-                new_author=self._collab_graphml_vertex_id_to_gt_id[author]
+                new_author=self._collab_graphml_vertex_id_to_gt_id[author1]
             except KeyError:
                 new_author = self.collab.add_vertex()
                 self._collab_graphml_vertex_id_to_gt_id[author]=self.collab.vertex_index[new_author]
-                self.collab.vertex_properties['_graphml_vertex_id'][new_author]=author
-                self._multiplex_collab[new_author]={}
-                            
-        #add collaborations, if older, registered collaborations do not exist
-        a1_gt_id = self._collab_graphml_vertex_id_to_gt_id[author1]
-        a2_gt_id = self._collab_graphml_vertex_id_to_gt_id[author2]
-        e = self.collab.edge(a1_gt_id,a2_gt_id)
-        if e == None:
-            e = self.collab.add_edge(a1_gt_id,a2_gt_id)
-        if self.collab.edge_properties['first_year_collaborated'][e]>int(year) or self.collab.edge_properties['first_year_collaborated'][e]==0:
-            self.collab.edge_properties['first_year_collaborated'][e]=int(year)
+                self.collab.vertex_properties['_graphml_vertex_id'][new_author]=author1
+                self._multiplex_collab[new_author]={}    
             
+        else: 
+            for author in [author1,author2]:
+                try:
+                    new_author=self._collab_graphml_vertex_id_to_gt_id[author]
+                except KeyError:
+                    new_author = self.collab.add_vertex()
+                    self._collab_graphml_vertex_id_to_gt_id[author]=self.collab.vertex_index[new_author]
+                    self.collab.vertex_properties['_graphml_vertex_id'][new_author]=author
+                    self._multiplex_collab[new_author]={}
+                            
+            #add collaborations, if older, registered collaborations do not exist
+            a1_gt_id = self._collab_graphml_vertex_id_to_gt_id[author1]
+            a2_gt_id = self._collab_graphml_vertex_id_to_gt_id[author2]
+            e = self.collab.edge(a1_gt_id,a2_gt_id)
+            if e == None:
+                e = self.collab.add_edge(a1_gt_id,a2_gt_id)
+            if self.collab.edge_properties['first_year_collaborated'][e]>int(year) or self.collab.edge_properties['first_year_collaborated'][e]==0:
+                self.collab.edge_properties['first_year_collaborated'][e]=int(year)
+
+################################################################        
+    ##
+    #Function to read collab from meat-file
+    def read_meta_create_collab(self,meta_file, header=True,delimiter=' '):
+        '''Reads meta data file, adds these infos to the citation network and builds the collaboration network.'''
+        with open(meta_file,'r') as f:
+            
+            if header==True:
+                f.readline()
+            
+            for line in f:
+                tmp=line.split(delimiter)
+                author_id=tmp[1]
+                paper_id=tmp[0]
+                year=int(tmp[2].rstrip())
+                
+                try:
+                    paper = self.citation.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_id]) #see whether paper is already in
+                except KeyError:
+                    self.add_paper(paper_id,year,[author_id],update_collaborations=False) #otherwise add it, incl. first author
+                    paper = self.citation.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_id])
+                    
+                
+                coauth = self._multiplex_citation[paper].keys()
+                for i in coauth:
+                    coauthor_id=self.collab.vertex_properties['_graphml_vertex_id'][i]
+                    self.add_collaboration(author_id,coauthor_id,year)
+                self.add_multiplex(paper_id,author_id,year)
+
+################################################################        
+    ##
+    #Function to read citation graphml file
+    def read_citation_graphml(self,citation_file):
+        '''Reads a citation graphml file and writes the citation layer.'''
+        self.citation = gt.load_graph(citation_file)
+        
+        self.citation.vertex_properties['year']=self.citation.new_vertex_property('int')
+        
+        for v in self.citation.vertices():
+            self._multiplex_citation[v]={}
+
+        #since I do not know how to address a node in graph_tool using his properties, create a dictionary to have this info:
+        self._citation_graphml_vertex_id_to_gt_id = {}
+
+        for v in self.citation.vertices(): 
+            self._citation_graphml_vertex_id_to_gt_id[self.citation.vertex_properties['_graphml_vertex_id'][v]]=int(self.citation.vertex_index[v])
+        
 
 ################################################################        
     ##

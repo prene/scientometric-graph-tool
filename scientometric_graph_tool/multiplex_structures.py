@@ -201,8 +201,6 @@ class PaperAuthorMultiplex():
                 try:
                     paper = self.citation.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_id]) #see whether paper is already in
                 except KeyError:
-                    print list(self.vertex_id(self.citation.vertices(),layer="citation"))
-                    print 'aha: ', paper_id
                     self.add_paper(paper_id,year,[author_id],update_collaborations=False) #otherwise add it
                     paper = self.citation.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_id])
                 

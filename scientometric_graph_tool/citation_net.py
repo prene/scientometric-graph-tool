@@ -101,9 +101,7 @@ class PaperCitationNet():
                 try:
                     paper_obj = self.graph.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_tmp])
                 except KeyError:
-                    v=self.graph.add_vertex()
-                    self.graph.vertex_properties['_graphml_vertex_id'][v]=paper_tmp
-                    paper_obj = v    
+                    paper_obj = self.add_paper(paper_tmp,year)    
                 
                 self.graph.vertex_properties['year'][paper_obj]=year
         
@@ -128,6 +126,7 @@ class PaperCitationNet():
         self._citation_graphml_vertex_id_to_gt_id[paper_id]=self.graph.vertex_index[new_paper]
         self.graph.vertex_properties['_graphml_vertex_id'][new_paper]=paper_id
         self.graph.vertex_properties['year'][new_paper]=int(year)
+        return new_paper
     
 
     ################################################################

@@ -41,9 +41,18 @@ Add citation between two papers in the citation network.
 
 Add collaboration between two authors, without adding a paper.
 
+**`.add_multiplex(self,paper_id,author_id,year)`**
+
+Function to add multiplex interconnections
+
 **`.read_graphml(self,collab_file,citation_file,mult_file)`**
 
 Read multiplex from files (graphml format) specifying the collaboration network, the citation network and multiplex meta data (csv).
+
+**`read_meta_create_collab(self,meta_file, header=True,paper_column=0,author_column=1,delimiter=' ')`**
+
+Function to read meta-file and to create coauthorship network based on it on-the-fly.
+
 
 **`.papers_by(self,author_id)`**
 
@@ -77,6 +86,13 @@ Returns an iterator of vertices in layer, that are multiplex neighbours of verte
 
 Returns an iterator of vertex id strings of the vertex objects specified in iterable_of_vertices, being members of layer.
 
+**`pickle(self,filename)`**
+
+Pickle the multiplex structure self into filename.
+
+**`unpickle(self,filename)`**
+
+Unpickle a pickled multiplex structure stored in filename into self.
 
 
 ####Function of module multiplex_structures

@@ -7,13 +7,71 @@ import graph_tool.all as gt
 import csv
 import itertools
 import random
+import time
 
 ######################################################################################################
 
 class PaperCitationNet():
     'Paper Citation Network Structure'
     
-##########################################################
+###############################################################
+    def __init__(self):
+        #create empty citation_net
+        self.graph = gt.Graph(directed=True)
+        self.graph.vertex_properties['year']=self.graph.new_vertex_property('int')
+        self.graph.vertex_properties['_graphml_vertex_id']=self.graph.new_vertex_property('string')
+        self.graph.edge_properties['year']=self.graph.new_edge_property('int')        
+        
+        self._citation_graphml_vertex_id_to_gt_id = {}
+    
+###############################################################
+    def read_edgelist(self,citation_file,delimiter=' ',cited_column=0,citing_column=1,header=True):
+        
+        with open(citation_file,'r') as f:
+            if header==True:
+                header_text=f.readline()
+            cou=0
+            t_prev=time.time()
+            t_cum=0
+            for line in f:
+                cou+=1
+                if cou-10000*(cou/10000)==0:
+                    print 'Lines read: '+str(cou)
+                    t=time.time()
+                    t_cum+=t-t_prev
+                    t_prev=t
+                    print 'Time passed: '+str(t_cum)
+                tmp=line.split(delimiter)
+                cited_paper=tmp[cited_column].rstrip()
+                citing_paper=tmp[citing_column].rstrip()
+                try:
+                    self.add_citation(cited_paper,citing_paper)
+                except NoSuchPaperError:
+                    try:
+                        self.add_paper(cited_paper,0)
+                    except PaperIDExistsAlreadyError:
+                        pass
+                    try:
+                        self.add_paper(citing_paper,0)
+                    except PaperIDExistsAlreadyError:
+                        pass
+                    try:
+                        self.add_citation(cited_paper,citing_paper)
+                    except NoSuchPaperError:
+                        print 'Something is terribly wrong...'
+                        break
+                except CitationExistsAlreadyError:
+                    #print "should be new: "+cited_paper+' '+citing_paper
+                    pass
+                    
+            
+        
+        
+###############################################################    
+    def add_metadata(self,citation_file):
+        pass
+    
+###############################################################
     def read_graphml(self,citation_file,citation_meta):
         self.graph = gt.load_graph(citation_file)
         self.graph.vertex_properties['year']=self.graph.new_vertex_property('int')
@@ -43,9 +101,7 @@ class PaperCitationNet():
                 try:
                     paper_obj = self.graph.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_tmp])
                 except KeyError:
-                    v=self.graph.add_vertex()
-                    self.graph.vertex_properties['_graphml_vertex_id'][v]=paper_tmp
-                    paper_obj = v    
+                    paper_obj = self.add_paper(paper_tmp,year)    
                 
                 self.graph.vertex_properties['year'][paper_obj]=year
         
@@ -53,13 +109,57 @@ class PaperCitationNet():
         self.max_year=max(self.graph.vertex_properties['year'].get_array())
         
         
-##########################################################
-        ##
-        #Calculate statistics of long-range-correlation motif
-        def long_range_motif(self):
+
+###############################################################
+    #Function to add new papers, incl. collaborations
+    def add_paper(self,paper_id,year):
+        '''Add a paper with paper_id (str), publication year (int)'''    
+        #try whether paper exists already in citation network
+        try:
+            self._citation_graphml_vertex_id_to_gt_id[paper_id]
+            raise PaperIDExistsAlreadyError() #stop execution here with this error
+        except KeyError:
             pass
+    
+        #add new paper to citation network and additional data structures
+        new_paper=self.graph.add_vertex()
+        self._citation_graphml_vertex_id_to_gt_id[paper_id]=self.graph.vertex_index[new_paper]
+        self.graph.vertex_properties['_graphml_vertex_id'][new_paper]=paper_id
+        self.graph.vertex_properties['year'][new_paper]=int(year)
+        return new_paper
+    
+
+    ################################################################
+    ##
+    #Funtion to add citation to citation network
+    def add_citation(self,cited_paper,citing_paper):
+        '''Add citation between two paper in citation network.'''
+        try:
+            cited_paper_gt=self._citation_graphml_vertex_id_to_gt_id[cited_paper]
+        except KeyError:
+            raise NoSuchPaperError()
         
-        
+        try:
+            citing_paper_gt=self._citation_graphml_vertex_id_to_gt_id[citing_paper]
+        except KeyError:
+            raise NoSuchPaperError()
+
+        if self.graph.edge(cited_paper_gt,citing_paper_gt)==None:
+            new_citation=self.graph.add_edge(cited_paper_gt,citing_paper_gt)
+            self.graph.edge_properties['year'][new_citation]=self.graph.vertex_properties['year'][self.graph.vertex(citing_paper_gt)]
+        else:
+            #print 'existing:'
+            #print list(self.vertex_id(list(self.graph.edge(cited_paper_gt,citing_paper_gt))))
+            raise CitationExistsAlreadyError()
+    
+
+################################################################
+    ##
+    #Function to get vertex_id's from vertex objects
+    def vertex_id(self,iterable_of_vertices):
+        'Returns an iterator of vertex id strings of the vertex objects specified in iterable_of_vertices'
+        return itertools.imap(lambda x: self.graph.vertex_properties['_graphml_vertex_id'][x],iterable_of_vertices)
+
 
 ##########################################################################################################################
             
@@ -267,6 +367,7 @@ class MolloyReedCitationInstance(PaperCitationNet):
 #check causality constraint of citation network
 def check_citation_causality(citation_net):
     print 'Causality check ...'
+    print 'Returns list of edges with causality problems...'
     problems = []
     for e in citation_net.edges():
         s = e.source()
@@ -275,11 +376,11 @@ def check_citation_causality(citation_net):
             problems.append(str(e))
     
     if len(problems)>0:
-        print 'Causality Problems with edge(s):'
-        for e in problems:
-            print e
+        print len(problems), ' causality Problems detected!'
+        return problems
     else:
         print 'No causality problems!'
+        return
 
             
 #################################################
@@ -296,4 +397,12 @@ class ExhaustedPossibleYearsError(Exception):
     
 class BadError(Exception):
     pass
+
+class PaperIDExistsAlreadyError(Exception):
+    pass
     
+class CitationExistsAlreadyError(Exception):
+    pass
+    
+class NoSuchPaperError(Exception):
+    pass

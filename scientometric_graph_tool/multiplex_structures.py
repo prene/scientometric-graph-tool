@@ -8,6 +8,9 @@ import csv
 import itertools
 import random
 import numpy
+import time
+import pickle
+import copy
 
 class PaperAuthorMultiplex():
     'Paper Citation and Author Collaboration Multiplex Structure'
@@ -22,7 +25,7 @@ class PaperAuthorMultiplex():
         self.citation.vertex_properties['year']=self.citation.new_vertex_property('int')
         self.citation.vertex_properties['_graphml_vertex_id']=self.citation.new_vertex_property('string')
         self.citation.edge_properties['year']=self.citation.new_edge_property('int')
-        self.collab.vertex_properties['year']=self.collab.new_vertex_property('int')
+#        self.collab.vertex_properties['year']=self.collab.new_vertex_property('int')
         self.collab.vertex_properties['_graphml_vertex_id']=self.collab.new_vertex_property('string')
         self.collab.edge_properties['first_year_collaborated']=self.collab.new_edge_property('int')
         
@@ -80,6 +83,35 @@ class PaperAuthorMultiplex():
                 if self.collab.edge_properties['first_year_collaborated'][e]>int(year) or self.collab.edge_properties['first_year_collaborated'][e]==0:
                     self.collab.edge_properties['first_year_collaborated'][e]=int(year)        
 
+        return new_paper
+
+################################################################
+    ##
+    #Funtion to add multiplex interconnection
+    def add_multiplex(self,paper_id,author_id,year):
+        try:
+            new_paper=self.citation.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_id])
+        except KeyError:
+            new_paper=self.citation.add_vertex()
+            self._citation_graphml_vertex_id_to_gt_id[paper_id]=self.citation.vertex_index[new_paper]
+            self.citation.vertex_properties['_graphml_vertex_id'][new_paper]=paper_id
+            self.citation.vertex_properties['year'][new_paper]=int(year)
+            self._multiplex_citation[new_paper]={}            
+        
+        try:
+            new_author=self.collab.vertex(self._collab_graphml_vertex_id_to_gt_id[author_id])
+        except KeyError:
+            new_author = self.collab.add_vertex()
+            self._collab_graphml_vertex_id_to_gt_id[author_id]=self.collab.vertex_index[new_author]
+            self.collab.vertex_properties['_graphml_vertex_id'][new_author]=author_id
+            self._multiplex_collab[new_author]={}
+        
+        #add multiplex information
+        self._multiplex_collab[new_author][new_paper]=True
+        self._multiplex_citation[new_paper][new_author]=True
+
+        
+
 
 ################################################################
     ##
@@ -108,25 +140,97 @@ class PaperAuthorMultiplex():
     #Function to add plain new collaboration, independent of papers, from other sources
     def add_collaboration(self,author1, author2, year):
         '''Add collaboration between two authors'''
-         
-        for author in [author1,author2]:
+        
+        if author1==author2: #simply add the author to the network, if not existing
             try:
-                new_author=self._collab_graphml_vertex_id_to_gt_id[author]
+                new_author=self._collab_graphml_vertex_id_to_gt_id[author1]
             except KeyError:
                 new_author = self.collab.add_vertex()
                 self._collab_graphml_vertex_id_to_gt_id[author]=self.collab.vertex_index[new_author]
-                self.collab.vertex_properties['_graphml_vertex_id'][new_author]=author
-                self._multiplex_collab[new_author]={}
-                            
-        #add collaborations, if older, registered collaborations do not exist
-        a1_gt_id = self._collab_graphml_vertex_id_to_gt_id[author1]
-        a2_gt_id = self._collab_graphml_vertex_id_to_gt_id[author2]
-        e = self.collab.edge(a1_gt_id,a2_gt_id)
-        if e == None:
-            e = self.collab.add_edge(a1_gt_id,a2_gt_id)
-        if self.collab.edge_properties['first_year_collaborated'][e]>int(year) or self.collab.edge_properties['first_year_collaborated'][e]==0:
-            self.collab.edge_properties['first_year_collaborated'][e]=int(year)
+                self.collab.vertex_properties['_graphml_vertex_id'][new_author]=author1
+                self._multiplex_collab[new_author]={}    
             
+        else: 
+            for author in [author1,author2]:
+                try:
+                    new_author=self._collab_graphml_vertex_id_to_gt_id[author]
+                except KeyError:
+                    new_author = self.collab.add_vertex()
+                    self._collab_graphml_vertex_id_to_gt_id[author]=self.collab.vertex_index[new_author]
+                    self.collab.vertex_properties['_graphml_vertex_id'][new_author]=author
+                    self._multiplex_collab[new_author]={}
+                            
+            #add collaborations, if older, registered collaborations do not exist
+            a1_gt_id = self._collab_graphml_vertex_id_to_gt_id[author1]
+            a2_gt_id = self._collab_graphml_vertex_id_to_gt_id[author2]
+            e = self.collab.edge(a1_gt_id,a2_gt_id)
+            if e == None:
+                e = self.collab.add_edge(a1_gt_id,a2_gt_id)
+            if self.collab.edge_properties['first_year_collaborated'][e]>int(year) or self.collab.edge_properties['first_year_collaborated'][e]==0:
+                self.collab.edge_properties['first_year_collaborated'][e]=int(year)
+
+################################################################        
+    ##
+    #Function to read collab from meat-file
+    def read_meta_create_collab(self,meta_file, header=True,paper_column=0,author_column=1,delimiter=' '):
+        '''Reads meta data file, adds these infos to the citation network and builds the collaboration network.'''
+        with open(meta_file,'r') as f:
+            
+            if header==True:
+                f.readline()
+            
+            cou=0
+            t_prev=time.time()
+            t_cum=0
+            
+            for line in f:
+                
+                cou+=1
+                if cou-10000*(cou/10000)==0:
+                    print 'Lines read: '+str(cou)
+                    t=time.time()
+                    t_cum+=t-t_prev
+                    t_prev=t
+                    print 'Time passed: '+str(t_cum)
+                
+                tmp=line.split(delimiter)
+                author_id=tmp[author_column]
+                paper_id=tmp[paper_column]
+                year=int(tmp[2].rstrip())
+                
+                try:
+                    paper = self.citation.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_id]) #see whether paper is already in
+                    self.citation.vertex_properties['year'][paper]=year
+                except KeyError:
+                    self.add_paper(paper_id,year,[author_id],update_collaborations=False) #otherwise add it
+                    paper = self.citation.vertex(self._citation_graphml_vertex_id_to_gt_id[paper_id])
+                
+                
+                
+                coauth = self._multiplex_citation[paper].keys()
+                for i in coauth:
+                    coauthor_id=self.collab.vertex_properties['_graphml_vertex_id'][i]
+                    self.add_collaboration(author_id,coauthor_id,year)
+                self.add_multiplex(paper_id,author_id,year)
+
+################################################################        
+    ##
+    #Function to read citation graphml file
+    def read_citation_graphml(self,citation_file):
+        '''Reads a citation graphml file and writes the citation layer.'''
+        self.citation = gt.load_graph(citation_file)
+        
+        self.citation.vertex_properties['year']=self.citation.new_vertex_property('int')
+        
+        for v in self.citation.vertices():
+            self._multiplex_citation[v]={}
+
+        #since I do not know how to address a node in graph_tool using his properties, create a dictionary to have this info:
+        self._citation_graphml_vertex_id_to_gt_id = {}
+
+        for v in self.citation.vertices(): 
+            self._citation_graphml_vertex_id_to_gt_id[self.citation.vertex_properties['_graphml_vertex_id'][v]]=int(self.citation.vertex_index[v])
+        
 
 ################################################################        
     ##
@@ -185,7 +289,7 @@ class PaperAuthorMultiplex():
                     v=self.citation.add_vertex()
                     self.citation.vertex_properties['_graphml_vertex_id'][v]=paper_tmp
                     self._multiplex_citation[v]={}
-                    paper_obj = v
+                    paper_obj = self.add_paper(paper_tmp,year,author_tmp,update_collaborations=False)
 
                 try:
                     author_obj = self.collab.vertex(self._collab_graphml_vertex_id_to_gt_id[author_tmp])
@@ -328,6 +432,15 @@ class PaperAuthorMultiplex():
     def multiplex_neighbours(self,vertex_object,layer=None):
         'Returns an iterator of vertices in layer, that are multiplex neighbours of vertex_object.'
         
+        
+        #define helper functions, necessary as using a lambda function would disabkle pickling of objects later ...
+        def ret_multiplex_citation_key(x):
+            return self._multiplex_citation[x].keys()
+        
+        def ret_multiplex_collab_key(x):
+            return self._multiplex_collab[x].keys()
+        
+        
         if layer==None:
             print "###################################"
             print "Specify start_layer of mapping first!"
@@ -336,12 +449,12 @@ class PaperAuthorMultiplex():
             return
                 
         if layer=='collab':
-            multiplex_neighbours_TMP=itertools.imap(lambda x: self._multiplex_citation[x].keys(),self._multiplex_collab[vertex_object].keys())
+            multiplex_neighbours_TMP=itertools.imap(ret_multiplex_citation_key,self._multiplex_collab[vertex_object].keys())
             multiplex_neighbours=itertools.chain.from_iterable(multiplex_neighbours_TMP)
             return multiplex_neighbours
         
         if layer=='citation':
-            multiplex_neighbours_TMP=itertools.imap(lambda x: self._multiplex_collab[x].keys(),self._multiplex_citation[vertex_object].keys())
+            multiplex_neighbours_TMP=itertools.imap(ret_multiplex_collab_key,self._multiplex_citation[vertex_object].keys())
             multiplex_neighbours=itertools.chain.from_iterable(multiplex_neighbours_TMP)
             return multiplex_neighbours
 
@@ -351,6 +464,14 @@ class PaperAuthorMultiplex():
     #Function to get vertex_id's from vertex objects
     def vertex_id(self,iterable_of_vertices,layer=None):
         'Returns an iterator of vertex id strings of the vertex objects specified in iterable_of_vertices, being members of layer.'
+    
+        #define helper functions, necessary as using a lambda function would disabkle pickling of objects later ...
+        def ret_collab_vertex_prop(x):
+            return self.collab.vertex_properties['_graphml_vertex_id'][x]
+            
+        def ret_citation_vertex_prop(x):
+            return self.citation.vertex_properties['_graphml_vertex_id'][x]
+        
         
         if layer==None:
             print "###################################"
@@ -360,10 +481,10 @@ class PaperAuthorMultiplex():
             return
         
         if layer=='collab':
-            return itertools.imap(lambda x: self.collab.vertex_properties['_graphml_vertex_id'][x],iterable_of_vertices)
-
+            return itertools.imap(ret_collab_vertex_prop,iterable_of_vertices)
+    
         if layer=='citation':
-            return itertools.imap(lambda x: self.citation.vertex_properties['_graphml_vertex_id'][x],iterable_of_vertices)
+            return itertools.imap(ret_citation_vertex_prop,iterable_of_vertices)
 
 ################################################################
     ##
@@ -373,6 +494,7 @@ class PaperAuthorMultiplex():
         print 'Calculating socially biased citation statistics...'
         print '--------------'
         print 'Consider executing check_citation_causality() first!'
+        citation_dictionary={}
         for paper in self.citation.vertices():
             year = self.citation.vertex_properties['year'][paper]
             biased_citations=0
@@ -393,15 +515,104 @@ class PaperAuthorMultiplex():
                     self_citations+=1
                 if earlier_collaborators and set(earlier_collaborators).intersection(set(citing_authors)).difference(authors): #add biased citation if citing author is former coauthor of at least one of the authors; exclude self-citations here
                     biased_citations+=1
+            citation_dictionary[self.citation.vertex_properties['_graphml_vertex_id'][paper]]=[citations,self_citations,biased_citations]
 
-            print '--------------'
-            print 'paper: '+self.citation.vertex_properties['_graphml_vertex_id'][paper]
-            print 'citations: '+str(citations)
-            print 'self citation: '+str(self_citations)
-            print 'socially biased citations: '+str(biased_citations)
+            # print '--------------'
+            # print 'paper: '+self.citation.vertex_properties['_graphml_vertex_id'][paper]
+            # print 'citations: '+str(citations)
+            # print 'self citation: '+str(self_citations)
+            # print 'socially biased citations: '+str(biased_citations)
+        print 'Output Format: {paper:[citations,self citations, socially biased citations],... }'
+        return citation_dictionary
+        
 ################################################################
-            
-       
+    ##
+    #Pickle the multiplex structure
+    def pickle(self,filename):
+        f = open(filename+'_citation.pickle','w')
+        pickle.dump(self.citation,f)
+        f.close()
+        
+        f = open(filename+'_collaboration.pickle','w')
+        pickle.dump(self.collab,f)
+        f.close()
+
+        f = open(filename+'_citation_ids.pickle','w')
+        pickle.dump(self._citation_graphml_vertex_id_to_gt_id,f)
+        f.close()
+
+        f = open(filename+'_collab_ids.pickle','w')
+        pickle.dump(self._collab_graphml_vertex_id_to_gt_id,f)
+        f.close()
+    
+        f = open(filename+'_citation_multiplex.pickle','w')
+        tmp={}
+        for v in self.citation.vertices():
+            v_id=self.citation.vertex_index[v]
+            tmp[v_id]={}
+            for w in self._multiplex_citation[v].keys():
+                if self._multiplex_citation[v][w]==True:
+                    tmp[v_id][self.collab.vertex_index[w]]=True
+        pickle.dump(tmp,f)
+        f.close()
+
+
+        f = open(filename+'_collab_multiplex.pickle','w')
+        tmp={}
+        for v in self.collab.vertices():
+            v_id=self.collab.vertex_index[v]
+            tmp[v_id]={}
+            for w in self._multiplex_collab[v].keys():
+                if self._multiplex_collab[v][w]==True:
+                    tmp[v_id][self.citation.vertex_index[w]]=True
+        pickle.dump(tmp,f)
+        f.close()
+
+
+################################################################
+    ##
+    #Unpickle Multiplex Structure
+    def unpickle(self,filename):
+        f = open(filename+'_citation.pickle','r')
+        self.citation=pickle.load(f)
+        f.close()
+        
+        f = open(filename+'_collaboration.pickle','r')
+        self.collab=pickle.load(f)
+        f.close()
+
+        f = open(filename+'_citation_ids.pickle','r')
+        self._citation_graphml_vertex_id_to_gt_id=pickle.load(f)
+        f.close()
+
+        f = open(filename+'_collab_ids.pickle','r')
+        self._collab_graphml_vertex_id_to_gt_id=pickle.load(f)
+        f.close()
+    
+        f = open(filename+'_citation_multiplex.pickle','r')
+        tmp=pickle.load(f)
+        for v_id in tmp.keys():
+            v=self.citation.vertex(v_id)
+            self._multiplex_citation[v]={}
+            for w_id in tmp[v_id].keys():
+                if tmp[v_id][w_id]==True:
+                    w=self.collab.vertex(w_id)
+                    self._multiplex_citation[v][w]=True
+        f.close()
+
+
+        f = open(filename+'_collab_multiplex.pickle','r')
+        tmp=pickle.load(f)
+        for v_id in tmp.keys():
+            v=self.collab.vertex(v_id)
+            self._multiplex_collab[v]={}
+            for w_id in tmp[v_id].keys():
+                if tmp[v_id][w_id]==True:
+                    w=self.citation.vertex(w_id)
+                    self._multiplex_collab[v][w]=True
+        f.close()
+    
+        
                         
 ##################################################################################################################
 #Define module-wide functions
@@ -451,4 +662,3 @@ class CitationExistsAlreadyError(Exception):
 
 class NotOneToOneError(Exception):
     pass
-

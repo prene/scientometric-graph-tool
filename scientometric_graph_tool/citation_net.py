@@ -367,6 +367,7 @@ class MolloyReedCitationInstance(PaperCitationNet):
 #check causality constraint of citation network
 def check_citation_causality(citation_net):
     print 'Causality check ...'
+    print 'Returns list of edges with causality problems...'
     problems = []
     for e in citation_net.edges():
         s = e.source()
@@ -375,11 +376,11 @@ def check_citation_causality(citation_net):
             problems.append(str(e))
     
     if len(problems)>0:
-        print 'Causality Problems with edge(s):'
-        for e in problems:
-            print e
+        print len(problems), ' causality Problems detected!'
+        return problems
     else:
         print 'No causality problems!'
+        return
 
             
 #################################################

@@ -1,4 +1,10 @@
 
+<<<<<<< HEAD
 *.pyc
 
 .Rhistory
+=======
+.Rhistory
+
+*.pyc
+>>>>>>> NewFeatureBranch

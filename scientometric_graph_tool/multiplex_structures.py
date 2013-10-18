@@ -524,6 +524,62 @@ class PaperAuthorMultiplex():
             # print 'socially biased citations: '+str(biased_citations)
         print 'Output Format: {paper:[citations,self citations, socially biased citations],... }'
         return citation_dictionary
+ 
+################################################################
+    ##
+    #Function to calculate citations of papers in years yr after yd years
+    def citation_success(self,yr,yd,perc):
+        #create property map
+        citation_success=self.citation.new_vertex_property("double")
+        citation_success_perc=self.citation.new_vertex_property("bool")    
+        perc_cuts=[]
+            
+        for y in yr:
+            print y,'...'
+            #find vertices
+            y1_vertices = gt.find_vertex(self.citation,self.citation.vertex_properties['year'],y)
+            y1yd_vertices = gt.find_vertex_range(self.citation,self.citation.vertex_properties['year'],[y,y+yd])
+    
+            #set vertex filter property
+            print 'Set filter prop...'
+            y1yd_filter_prop=self.citation.new_vertex_property("bool")
+            y1_filter_prop=self.citation.new_vertex_property("bool")
+            y1yd_filter_prop.a=False
+            y1_filter_prop.a=False
+            for v in y1yd_vertices:
+                y1yd_filter_prop[v]=True
+            for v in y1_vertices:
+                y1_filter_prop[v]=True
+    
+            #calculate graph_view of the subgraph of y,y+yd
+            print 'Calc graph view ...'
+            sub_cite_degree = self.citation.new_vertex_property("double")
+            self.citation.set_vertex_filter(y1yd_filter_prop)
+            sub_cite_degree.fa = self.citation.degree_property_map('out').fa
+            #there are a lot of zeros ... so the percentile percentage has to be quite high
+            self.citation.set_vertex_filter(None)
+            self.citation.set_vertex_filter(y1_filter_prop)
+            tmp = sub_cite_degree.fa
+            percentile_cut = numpy.percentile(tmp,perc)
+            perc_cuts.append(percentile_cut)
+            print 'Percentile cut is ',percentile_cut
+            self.citation.set_vertex_filter(None)
+
+        
+            print 'Write success ...'
+
+            #write number of citations and success bool after yd years
+            self.citation.set_vertex_filter(y1_filter_prop)
+            citation_success.fa = tmp.copy()
+            print 'There are ',numpy.count_nonzero(tmp>percentile_cut),' nodes exceeding the percentile cut.'
+            citation_success_perc.fa = (tmp > percentile_cut).copy()
+            self.citation.set_vertex_filter(None)
+        
+            
+        return citation_success, citation_success_perc,perc_cuts
+        
+        
+
         
 ################################################################
     ##

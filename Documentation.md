@@ -49,7 +49,7 @@ Function to add multiplex interconnections
 
 Read multiplex from files (graphml format) specifying the collaboration network, the citation network and multiplex meta data (csv).
 
-**`read_meta_create_collab(self,meta_file, header=True,paper_column=0,author_column=1,delimiter=' ')`**
+**`.read_meta_create_collab(self,meta_file, header=True,paper_column=0,author_column=1,delimiter=' ')`**
 
 Function to read meta-file and to create coauthorship network based on it on-the-fly.
 
@@ -78,19 +78,19 @@ Returns a list of the number of papers for the authors specified in the iterator
 
 Returns lists of a collaboration net property for a selection of nodes and their according multiplex-mapped property, aggregated using aggregation_function.
 
-**`multiplex_neighbours(self,vertex_object,layer=None)`**
+**`.multiplex_neighbours(self,vertex_object,layer=None)`**
 
 Returns an iterator of vertices in layer, that are multiplex neighbours of vertex_object.
 
-**`vertex_id(self,iterable_of_vertices,layer=None)`**
+**`.vertex_id(self,iterable_of_vertices,layer=None)`**
 
 Returns an iterator of vertex id strings of the vertex objects specified in iterable_of_vertices, being members of layer.
 
-**`pickle(self,filename)`**
+**`.pickle(self,filename)`**
 
 Pickle the multiplex structure self into filename.
 
-**`unpickle(self,filename)`**
+**`.unpickle(self,filename)`**
 
 Unpickle a pickled multiplex structure stored in filename into self.
 

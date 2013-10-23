@@ -351,78 +351,78 @@ class PaperAuthorMultiplex():
     ##
     #Function to multiplex-map proeprty maps, eventually aggregating and aggregation function
     def multiplex_property_mapping(self,origin_layer_iterator,origin_layer_property,target_layer_property,direction=None,aggregation_function=None):
-        '''Returns list of collaboration net properties for selection of nodes and their according multiplex-mapped property, aggregated using aggregation_function.'''
-        
-        if direction == None:
-            print "###################################"
-            print "Specify direction of mapping first!"
-            print "USE direction='collab_to_citation' OR direction='citation_to_collab'"
-            print "####################################"
-            return
-        
-        if direction == 'collab_to_citation':
-        
-            origin_layer_property_values=[]
-            target_layer_property_values=[]
-        
-            if aggregation_function==None:
-                
-                print "##############################"
-                print "Assuming one-to-one multiplex!"
-                print "Consider checking this assumption using check_one_to_one()!"
-                print "Otherwise, specify aggregation function!"
-                print "##############################"
-                
-                for v in origin_layer_iterator:
-                    try:
-                        target_vertex = self._multiplex_collab[v].keys()[0]
-                        origin_layer_property_values.append(origin_layer_property[v])
-                        target_layer_property_values.append(target_layer_property[target_vertex])
-                    except IndexError: #if there is no target vertex, simply don't consider it
-                        pass
-            else:
-                for v in origin_layer_iterator:
-                    try:
-                        self._multiplex_collab[v].keys()[0]
-                        origin_layer_property_values.append(origin_layer_property[v])
-                        target_layer_property_values_TMP=[]
-                        for target_vs in self._multiplex_collab[v].keys():
-                            target_layer_property_values_TMP.append(target_layer_property[target_vs])
-                        target_layer_property_values.append(aggregation_function(target_layer_property_values_TMP))
-                    except IndexError: #if there is no target vertex, simply don't consider it
-                        pass
-                        
-            return origin_layer_property_values, target_layer_property_values
-                        
-                        
-        if direction == 'citation_to_collab':
-            origin_layer_property_values=[]
-            target_layer_property_values=[]
-        
-            if aggregation_function==None:
-                print "Assuming one-to-one multiplex!"
-                print "Consider checking this assumption using check_one_to_one()!"
-                print "Otherwise, specify aggregation function!"
-                for v in origin_layer_iterator:
-                    try:
-                        target_vertex = self._multiplex_citation[v].keys()[0]
-                        origin_layer_property_values.append(origin_layer_property[v])
-                        target_layer_property_values.append(target_layer_property[target_vertex])
-                    except IndexError: #if there is no target vertex, simply don't consider it
-                        pass
-            else:
-                for v in origin_layer_iterator:
-                    try:
-                        self._multiplex_citation[v].keys()[0]
-                        origin_layer_property_values.append(origin_layer_property[v])
-                        target_layer_property_values_TMP=[]
-                        for target_vs in self._multiplex_collab[v].keys():
-                            target_layer_property_values_TMP.append(target_layer_property[target_vs])
-                        target_layer_property_values.append(aggregation_function(target_layer_property_values_TMP))
-                    except IndexError: #if there is no target vertex, simply don't consider it
-                        pass
+    '''Returns list of collaboration net properties for selection of nodes and their according multiplex-mapped property, aggregated using aggregation_function.'''
+    
+    if direction == None:
+        print "###################################"
+        print "Specify direction of mapping first!"
+        print "USE direction='collab_to_citation' OR direction='citation_to_collab'"
+        print "####################################"
+        return
+    
+    if direction == 'collab_to_citation':
+    
+        origin_layer_property_values=[]
+        target_layer_property_values=[]
+    
+        if aggregation_function==None:
+            
+            print "##############################"
+            print "Assuming one-to-one multiplex!"
+            print "Consider checking this assumption using check_one_to_one()!"
+            print "Otherwise, specify aggregation function!"
+            print "##############################"
+            
+            for v in origin_layer_iterator:
+                try:
+                    target_vertex = multiplex._multiplex_collab[v].keys()[0]
+                    origin_layer_property_values.append(origin_layer_property[v])
+                    target_layer_property_values.append(target_layer_property[target_vertex])
+                except IndexError: #if there is no target vertex, simply don't consider it
+                    pass
+        else:
+            for v in origin_layer_iterator:
+                try:
+                    target_vertex = multiplex._multiplex_collab[v].keys()[0]
+                    origin_layer_property_values.append(origin_layer_property[v])
+                    target_layer_property_values_TMP=[]
+                    for target_vs in multiplex._multiplex_collab[v].keys():
+                        target_layer_property_values_TMP.append(target_layer_property[target_vs])
+                    target_layer_property_values.append(aggregation_function(target_layer_property_values_TMP))
+                except IndexError: #if there is no target vertex, simply don't consider it
+                    pass
                     
-            return origin_layer_property_values, target_layer_property_values
+        return origin_layer_property_values, target_layer_property_values
+                    
+                    
+    if direction == 'citation_to_collab':
+        origin_layer_property_values=[]
+        target_layer_property_values=[]
+    
+        if aggregation_function==None:
+            print "Assuming one-to-one multiplex!"
+            print "Consider checking this assumption using check_one_to_one()!"
+            print "Otherwise, specify aggregation function!"
+            for v in origin_layer_iterator:
+                try:
+                    target_vertex = multiplex._multiplex_citation[v].keys()[0]
+                    origin_layer_property_values.append(origin_layer_property[v])
+                    target_layer_property_values.append(target_layer_property[target_vertex])
+                except IndexError: #if there is no target vertex, simply don't consider it
+                    pass
+        else:
+            for v in origin_layer_iterator:
+                try:
+                    multiplex._multiplex_citation[v].keys()[0]
+                    origin_layer_property_values.append(origin_layer_property[v])
+                    target_layer_property_values_TMP=[]
+                    for target_vs in multiplex._multiplex_citation[v].keys():
+                        target_layer_property_values_TMP.append(target_layer_property[target_vs])
+                    target_layer_property_values.append(aggregation_function(target_layer_property_values_TMP))
+                except IndexError: #if there is no target vertex, simply don't consider it
+                    continue
+                
+        return origin_layer_property_values, target_layer_property_values
 
 
 ################################################################

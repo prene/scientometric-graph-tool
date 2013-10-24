@@ -375,7 +375,7 @@ class PaperAuthorMultiplex():
             
                 for v in origin_layer_iterator:
                     try:
-                        target_vertex = multiplex._multiplex_collab[v].keys()[0]
+                        target_vertex = self._multiplex_collab[v].keys()[0]
                         origin_layer_property_values.append(origin_layer_property[v])
                         target_layer_property_values.append(target_layer_property[target_vertex])
                     except IndexError: #if there is no target vertex, simply don't consider it
@@ -383,10 +383,10 @@ class PaperAuthorMultiplex():
             else:
                 for v in origin_layer_iterator:
                     try:
-                        target_vertex = multiplex._multiplex_collab[v].keys()[0]
+                        target_vertex = self._multiplex_collab[v].keys()[0]
                         origin_layer_property_values.append(origin_layer_property[v])
                         target_layer_property_values_TMP=[]
-                        for target_vs in multiplex._multiplex_collab[v].keys():
+                        for target_vs in self._multiplex_collab[v].keys():
                             target_layer_property_values_TMP.append(target_layer_property[target_vs])
                         target_layer_property_values.append(aggregation_function(target_layer_property_values_TMP))
                     except IndexError: #if there is no target vertex, simply don't consider it
@@ -405,7 +405,7 @@ class PaperAuthorMultiplex():
                 print "Otherwise, specify aggregation function!"
                 for v in origin_layer_iterator:
                     try:
-                        target_vertex = multiplex._multiplex_citation[v].keys()[0]
+                        target_vertex = self._multiplex_citation[v].keys()[0]
                         origin_layer_property_values.append(origin_layer_property[v])
                         target_layer_property_values.append(target_layer_property[target_vertex])
                     except IndexError: #if there is no target vertex, simply don't consider it
@@ -413,10 +413,10 @@ class PaperAuthorMultiplex():
             else:
                 for v in origin_layer_iterator:
                     try:
-                        multiplex._multiplex_citation[v].keys()[0]
+                        self._multiplex_citation[v].keys()[0]
                         origin_layer_property_values.append(origin_layer_property[v])
                         target_layer_property_values_TMP=[]
-                        for target_vs in multiplex._multiplex_citation[v].keys():
+                        for target_vs in self._multiplex_citation[v].keys():
                             target_layer_property_values_TMP.append(target_layer_property[target_vs])
                         target_layer_property_values.append(aggregation_function(target_layer_property_values_TMP))
                     except IndexError: #if there is no target vertex, simply don't consider it

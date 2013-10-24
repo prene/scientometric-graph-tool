@@ -425,6 +425,41 @@ class PaperAuthorMultiplex():
             return origin_layer_property_values, target_layer_property_values
 
 
+
+################################################################
+    ##
+    #Function to calculate shortest path in collab network at time of publication
+    def shortest_path_collab_formation(self,new_collab_year):
+        '''Calculate shortest path at time of first collaboration'''
+    
+        shortest_distances={}
+    
+        mask_collab = self.collab.new_edge_property('bool')
+
+        for year in range(1892,new_collab_year):
+            print year
+            new_collabs=gt.util.find_edge_range(self.collab,self.collab.edge_properties['first_year_collaborated'],year)
+            #set filter of collabs younger than year
+            mask_collab.a = False
+            for e in gt.util.find_edge_range(self.collab,self.collab.edge_properties['first_year_collaborated'],[1892,year-1]):
+                mask_collab[e] = True
+        
+            #Set filters for analysis
+            self.collab.set_edge_filter(mask_collab)
+        
+            #calculate shortest distance for all first-time-collabs of year
+            for e in new_collabs:
+                source = e.source()
+                target = e.target()
+                shortest_distances[e] = gt.topology.shortest_distance(self.collab,source,target)
+            
+            #reset graph filters
+            self.collab.set_edge_filter(None)
+            self.collab.set_vertex_filter(None)
+    
+        return shortest_distances
+
+
 ################################################################
     ##
     #Function to calculate multiplex neighbourhood of v in layer 1. 

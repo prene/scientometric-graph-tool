@@ -436,7 +436,7 @@ class PaperAuthorMultiplex():
     
         mask_collab = self.collab.new_edge_property('bool')
 
-        for year in range(1892,new_collab_year):
+        for year in [new_collab_year]:
             print year
             new_collabs=gt.graph_tool.util.find_edge_range(self.collab,self.collab.edge_properties['first_year_collaborated'],year)
             #set filter of collabs younger than year

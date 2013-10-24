@@ -438,10 +438,10 @@ class PaperAuthorMultiplex():
 
         for year in range(1892,new_collab_year):
             print year
-            new_collabs=gt.util.find_edge_range(self.collab,self.collab.edge_properties['first_year_collaborated'],year)
+            new_collabs=gt.graph_tool.util.find_edge_range(self.collab,self.collab.edge_properties['first_year_collaborated'],year)
             #set filter of collabs younger than year
             mask_collab.a = False
-            for e in gt.util.find_edge_range(self.collab,self.collab.edge_properties['first_year_collaborated'],[1892,year-1]):
+            for e in gt.graph_tool.util.find_edge_range(self.collab,self.collab.edge_properties['first_year_collaborated'],[1892,year-1]):
                 mask_collab[e] = True
         
             #Set filters for analysis
@@ -451,7 +451,7 @@ class PaperAuthorMultiplex():
             for e in new_collabs:
                 source = e.source()
                 target = e.target()
-                shortest_distances[e] = gt.topology.shortest_distance(self.collab,source,target)
+                shortest_distances[e] = gt.graph_tool.topology.shortest_distance(self.collab,source,target)
             
             #reset graph filters
             self.collab.set_edge_filter(None)

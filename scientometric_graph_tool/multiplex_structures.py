@@ -548,6 +548,7 @@ class PaperAuthorMultiplex():
                 citing_authors = self._multiplex_citation[citing_paper].keys()
                 if set(authors).intersection(set(citing_authors)): #count self-citations
                     self_citations+=1
+                    continue #if continue is not given, the three citation counts are not additive, i.e. a self-citation can additionally be a  socially biased citation
                 if earlier_collaborators and set(earlier_collaborators).intersection(set(citing_authors)).difference(authors): #add biased citation if citing author is former coauthor of at least one of the authors; exclude self-citations here
                     biased_citations+=1
             citation_dictionary[self.citation.vertex_properties['_graphml_vertex_id'][paper]]=[citations,self_citations,biased_citations]
@@ -559,6 +560,8 @@ class PaperAuthorMultiplex():
             # print 'socially biased citations: '+str(biased_citations)
         print 'Output Format: {paper:[citations,self citations, socially biased citations],... }'
         return citation_dictionary
+
+
  
 ################################################################
     ##

@@ -352,27 +352,27 @@ class PaperAuthorMultiplex():
     #Function to multiplex-map proeprty maps, eventually aggregating and aggregation function
     def multiplex_property_mapping(self,origin_layer_iterator,origin_layer_property,target_layer_property,direction=None,aggregation_function=None):
         '''Returns list of collaboration net properties for selection of nodes and their according multiplex-mapped property, aggregated using aggregation_function.'''
-        
+    
         if direction == None:
             print "###################################"
             print "Specify direction of mapping first!"
             print "USE direction='collab_to_citation' OR direction='citation_to_collab'"
             print "####################################"
             return
-        
+    
         if direction == 'collab_to_citation':
-        
+    
             origin_layer_property_values=[]
             target_layer_property_values=[]
-        
+    
             if aggregation_function==None:
-                
+            
                 print "##############################"
                 print "Assuming one-to-one multiplex!"
                 print "Consider checking this assumption using check_one_to_one()!"
                 print "Otherwise, specify aggregation function!"
                 print "##############################"
-                
+            
                 for v in origin_layer_iterator:
                     try:
                         target_vertex = self._multiplex_collab[v].keys()[0]
@@ -383,7 +383,7 @@ class PaperAuthorMultiplex():
             else:
                 for v in origin_layer_iterator:
                     try:
-                        self._multiplex_collab[v].keys()[0]
+                        target_vertex = self._multiplex_collab[v].keys()[0]
                         origin_layer_property_values.append(origin_layer_property[v])
                         target_layer_property_values_TMP=[]
                         for target_vs in self._multiplex_collab[v].keys():
@@ -391,14 +391,14 @@ class PaperAuthorMultiplex():
                         target_layer_property_values.append(aggregation_function(target_layer_property_values_TMP))
                     except IndexError: #if there is no target vertex, simply don't consider it
                         pass
-                        
+                    
             return origin_layer_property_values, target_layer_property_values
-                        
-                        
+                    
+                    
         if direction == 'citation_to_collab':
             origin_layer_property_values=[]
             target_layer_property_values=[]
-        
+    
             if aggregation_function==None:
                 print "Assuming one-to-one multiplex!"
                 print "Consider checking this assumption using check_one_to_one()!"
@@ -416,13 +416,48 @@ class PaperAuthorMultiplex():
                         self._multiplex_citation[v].keys()[0]
                         origin_layer_property_values.append(origin_layer_property[v])
                         target_layer_property_values_TMP=[]
-                        for target_vs in self._multiplex_collab[v].keys():
+                        for target_vs in self._multiplex_citation[v].keys():
                             target_layer_property_values_TMP.append(target_layer_property[target_vs])
                         target_layer_property_values.append(aggregation_function(target_layer_property_values_TMP))
                     except IndexError: #if there is no target vertex, simply don't consider it
-                        pass
-                    
+                        continue
+                
             return origin_layer_property_values, target_layer_property_values
+
+
+
+################################################################
+    ##
+    #Function to calculate shortest path in collab network at time of publication
+    def shortest_path_collab_formation(self,new_collab_year):
+        '''Calculate shortest path at time of first collaboration'''
+    
+        shortest_distances={}
+    
+        mask_collab = self.collab.new_edge_property('bool')
+
+        for year in [new_collab_year]:
+            print year
+            new_collabs=gt.graph_tool.util.find_edge(self.collab,self.collab.edge_properties['first_year_collaborated'],year)
+            #set filter of collabs younger than year
+            mask_collab.a = False
+            for e in gt.graph_tool.util.find_edge_range(self.collab,self.collab.edge_properties['first_year_collaborated'],[1892,year-1]):
+                mask_collab[e] = True
+        
+            #Set filters for analysis
+            self.collab.set_edge_filter(mask_collab)
+        
+            #calculate shortest distance for all first-time-collabs of year
+            for e in new_collabs:
+                source = e.source()
+                target = e.target()
+                shortest_distances[e] = gt.graph_tool.topology.shortest_distance(self.collab,source,target)
+            
+            #reset graph filters
+            self.collab.set_edge_filter(None)
+            self.collab.set_vertex_filter(None)
+    
+        return shortest_distances
 
 
 ################################################################
@@ -513,6 +548,7 @@ class PaperAuthorMultiplex():
                 citing_authors = self._multiplex_citation[citing_paper].keys()
                 if set(authors).intersection(set(citing_authors)): #count self-citations
                     self_citations+=1
+                    continue #if continue is not given, the three citation counts are not additive, i.e. a self-citation can additionally be a  socially biased citation
                 if earlier_collaborators and set(earlier_collaborators).intersection(set(citing_authors)).difference(authors): #add biased citation if citing author is former coauthor of at least one of the authors; exclude self-citations here
                     biased_citations+=1
             citation_dictionary[self.citation.vertex_properties['_graphml_vertex_id'][paper]]=[citations,self_citations,biased_citations]
@@ -524,6 +560,8 @@ class PaperAuthorMultiplex():
             # print 'socially biased citations: '+str(biased_citations)
         print 'Output Format: {paper:[citations,self citations, socially biased citations],... }'
         return citation_dictionary
+
+
  
 ################################################################
     ##
